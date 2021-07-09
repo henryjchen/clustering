@@ -19,7 +19,7 @@ def makeDistanceMatrix(data):
 
 '''
 changed this so it can update both single AND complete linkage depending on
-boolean single
+boolean single.
 '''
 def updateMatrix(distances, i, j, typee):
     #create a new row
