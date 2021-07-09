@@ -164,7 +164,6 @@ def kMeans(data, k):
         
     #stores the last iterations groups
     old = []
-    
     while True:
         # resetting groups
         for g in group:
@@ -175,8 +174,7 @@ def kMeans(data, k):
             for c in clusterNum:
                 # if cluster is empty continue
                 if not c:
-                    continue
-                
+                    continue                
                 gap_dist = abs(c[0]-data[val[i]])
                 if gap_dist < low:
                     low = gap_dist
@@ -190,19 +188,16 @@ def kMeans(data, k):
         for cluster in clusterNum:
             # if cluster is empty continue
             if not cluster:
-                continue
-            
-            if (len(cluster) > 0):
-                avg = sum(cluster)/len(cluster)
-                cluster.clear()
-                cluster.append(avg)
+                continue            
+            avg = sum(cluster)/len(cluster)
+            cluster.clear()
+            cluster.append(avg)
           
         # if groupings do not change two consecutive times, stop
         # make sure you have right number of final groups.
         if group == old and k == len(group):
             break
-        old = group
-        
+        old = group 
     return group
         
         
