@@ -17,6 +17,7 @@ def makeDistanceMatrix(data):
     return distanceTriangle
     # print(data)
 
+
 '''
 changed this so it can update both single AND complete linkage depending on
 boolean single.
@@ -45,9 +46,7 @@ def updateMatrix(distances, i, j, typee):
                 row.append(max(distances[i][col], distances[col-1][j]))
             else:
                 row.append(max(distances[i][col], distances[j-1][col])) 
-
                 
-    
     #delete old cols
     for r in range(i+1,n-1):
         del distances[r][i+1]
@@ -74,7 +73,8 @@ def updateGroups(groups, i, j):
     return groups
         
 
-        
+      
+    
 ### Four clustering methods. The Single Linkage Clustering Technique completed for your example
     #You need to write the other three.
 def singleLinkage(data, k):
@@ -96,10 +96,9 @@ def singleLinkage(data, k):
         group = updateGroups(group, row, col)
         d = updateMatrix(d, row, col, typee='s')
     return group
-
-    
+ 
         
-        
+ 
 # TODO write this function
 def completeLinkage(data, k):
     data = data.sort_values()
@@ -199,38 +198,83 @@ def kMeans(data, k):
             break
         old = group 
     return group
+
+
+
+# calculate variance
+def calcVars(groups, avgs, i, j): 
+    new = groups[i]+(groups[j])
+    tot = 0
+    avg = 0
+    for x in new:
+        avg += data[x]
+    avg /= len(new)
+    for thing in new:
+        tot += (data[thing] - avg) ** 2
+    return tot
+
+# minimize variance
+def wardMethod(data, k):
+    data = data.sort_values()
+    group = []
+    for x in data.index:
+        group.append([x])
         
-        
+    while len(group) > k:
+        avgs = [sum(data[groupp])/len(groupp) for groupp in group]
+            
+        d = [[0 for x in range(len(group))] for y in range(len(group))]
+  
+        for i in range(len(group)):
+            for j in range(i,len(group)):
+                if i != j:
+                    d[i][j] = calcVars(group, avgs, i, j)   
+        ii = None
+        jj = None
+        minvalue = 100000000
+        for i in range(len(group)):
+            for j in range(i, len(group)):
+                if i != j and d[i][j] < minvalue:
+                    minvalue = d[i][j]
+                    ii = i
+                    jj = j
+
+        group[ii].extend(group[jj])
+        group.pop(jj)
+    return group
+
+
+
 
 ### Start Program and open file
 print("\nHenry's Clustering Program.\n")
-# filename = input("Please enter the data-file's name: ")
-filename = "students.csv" ###############################################
+filename = input("Please enter the data-file's name: ")
+# filename = "students.csv" 
 dataFile = pd.read_csv(filename, index_col = 0)
 
 ### Allow User to select attribute
 print("Here is a list of attributes:")
 for name in dataFile.columns:
     print(name, end = "    ")
-# attribute = input("\nWhich attribute would you like to cluster?  ")
-attribute = 'Weight'##################################################
+attribute = input("\nWhich attribute would you like to cluster?  ")
+# attribute = 'Height'
 data = dataFile.loc[:][attribute]
 
 ### Potentially plot data
-# toPlot = input("Would you like to plot this data? (y,n)  ")
-toPlot = 'y'
+toPlot = input("Would you like to plot this data? (y,n)  ")
+# toPlot = 'y'
 if toPlot.lower()[0] == 'y':
     plt.hist(data)
     plt.show()
 #print(data)
     
 ### Select the Clustering Technique
-# print("\nWhich clustering technique would you like to use?")
-# print("(S)ingle linkage\n(C)omplete linkage\n(A)verage linkage\n(K)-means")
-# clusterTechnique = input().lower()
-clusterTechnique = 'k'
-# k = int(input("How many clusters? "))
-k = 3
+print("\nWhich clustering technique would you like to use?")
+print("(S)ingle linkage\n(C)omplete linkage\n(A)verage linkage\n(K)-means\n(W)-ard's Variance minimizing")
+clusterTechnique = input().lower()
+# clusterTechnique = 'w'
+k = int(input("How many clusters? "))
+# k = 5
 if clusterTechnique == 's':
     groups = singleLinkage(data, k)
 elif clusterTechnique == 'c':
@@ -239,14 +283,16 @@ elif clusterTechnique == 'a':
     groups = averageLinkage(data, k)
 elif clusterTechnique == 'k':
     groups = kMeans(data, k)
+elif clusterTechnique == 'w':
+    groups = wardMethod(data, k)
 
-print("The groups are:")
+print("\nThe groups are:")
 for g in groups:
     print()
     for name in g:
         print(name + ":", data[name])
-# toPlot = input("Would you like to plot the groups? (y/n)  ")
-# toPlot = toPlot.lower()[0]
+toPlot = input("Would you like to plot the groups? (y/n)  ")
+toPlot = toPlot.lower()[0]
 
 if toPlot == 'y':
     for g in groups:
