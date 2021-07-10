@@ -26,6 +26,7 @@ def updateMatrix(distances, i, j, typee):
     #create a new row
     row = []
     n = len(distances)+1
+    # for single linkage
     if typee=='s':
         for col in range(n):
             if col == i+1 or col == j:
@@ -36,6 +37,7 @@ def updateMatrix(distances, i, j, typee):
                 row.append(min(distances[i][col], distances[col-1][j]))
             else:
                 row.append(min(distances[i][col], distances[j-1][col]))        
+    # for complete linkage
     elif typee=='c':
         for col in range(n):
             if col == i+1 or col == j:
@@ -71,22 +73,39 @@ def updateGroups(groups, i, j):
     #add in the new group
     groups.append(newGroup)
     return groups
+
+'''
+Calculate the variance of a group 
+- used in Ward's Minimimum Variance Clustering Method
+'''
+def calcVars(groups, i, j): 
+    new = groups[i]+(groups[j])
+    tot = 0
+    avg = 0
+    for x in new:
+        avg += data[x]
+    avg /= len(new)
+    for thing in new:
+        tot += (data[thing] - avg) ** 2
+    return tot
         
 
       
     
-### Four clustering methods. The Single Linkage Clustering Technique completed for your example
-    #You need to write the other three.
+### Five clustering methods (including additional clustering method). 
+'''
+Single Linkage Clustering
+'''
 def singleLinkage(data, k):
-    data = data.sort_values()
     group = []
     for x in data.index:
         group.append([x])
     d = makeDistanceMatrix(data)
-    while len(d)>=k:
+    while len(group) > k:
         minimum=float('inf')
         row=0
         col=0
+        # find minimum
         for i in range(len(d)):
             for j in range(len(d[i])):
                 if d[i][j] < minimum:
@@ -94,22 +113,25 @@ def singleLinkage(data, k):
                     row=i
                     col=j
         group = updateGroups(group, row, col)
+        # the 'typee='s'' updates matrix with minimum
         d = updateMatrix(d, row, col, typee='s')
     return group
  
         
  
-# TODO write this function
+'''
+Complete Linkage Clustering
+'''
 def completeLinkage(data, k):
-    data = data.sort_values()
     group = []
     for x in data.index:
         group.append([x])
     d = makeDistanceMatrix(data)
-    while len(d)>=k:
+    while len(group) > k:
         minimum=float('inf')
         row=0
         col=0
+        # find the two clusters closest together
         for i in range(len(d)):
             for j in range(len(d[i])):
                 if d[i][j] < minimum:
@@ -117,39 +139,43 @@ def completeLinkage(data, k):
                     row=i
                     col=j
         group = updateGroups(group, row, col)
-        d = updateMatrix(d, row, col, typee='c')
+        # the 'typee='c'' updates matrix with maximum rather than min
+        d = updateMatrix(d, row, col, typee='c') 
     return group
 
 
 
-
-# TODO write this function
+'''
+Average Linkage Clustering
+'''
 def averageLinkage(data, k):
     data = data.sort_values()
     group = []
     for x in data.index:
         group.append([x])
 
-    #return average value of group
+    #returns the average value of group
     calcAvg = lambda groups: [sum(data[group])/len(group) for group in groups]
         
-    while len(group)>k:
+    while len(group) > k:
         avgs = calcAvg(group)
         d = []
+        # since data is sorted, we don't need to brute force every combination
         for i in range(len(group)-1):
             dd = avgs[i+1]-avgs[i]
             d.append(dd)
-        minvalue=min(d)
-        idx=d.index(minvalue)
+        minvalue = min(d)
+        idx = d.index(minvalue)
         group[idx].extend(group[idx+1])
         group.pop(idx+1)
     return group
 
 
 
-# TODO write this function
+'''
+K-Means Clustering
+'''
 def kMeans(data, k):
-    data = data.sort_values()
     val = []
     for idx in data.index:
         val.append(idx)
@@ -194,47 +220,35 @@ def kMeans(data, k):
           
         # if groupings do not change two consecutive times, stop
         # make sure you have right number of final groups.
-        if group == old and k == len(group):
+        if group == old and k == (len(group)-group.count([])):
             break
         old = group 
     return group
 
 
 
-# calculate variance
-def calcVars(groups, avgs, i, j): 
-    new = groups[i]+(groups[j])
-    tot = 0
-    avg = 0
-    for x in new:
-        avg += data[x]
-    avg /= len(new)
-    for thing in new:
-        tot += (data[thing] - avg) ** 2
-    return tot
 
-# minimize variance
+'''
+Ward's Minimum Variance Clustering
+'''
 def wardMethod(data, k):
-    data = data.sort_values()
     group = []
     for x in data.index:
         group.append([x])
         
-    while len(group) > k:
-        avgs = [sum(data[groupp])/len(groupp) for groupp in group]
-            
+    while len(group) > k:            
         d = [[0 for x in range(len(group))] for y in range(len(group))]
   
         for i in range(len(group)):
-            for j in range(i,len(group)):
-                if i != j:
-                    d[i][j] = calcVars(group, avgs, i, j)   
+            for j in range(i+1,len(group)):
+                # stores variance after combining groups 'i' and 'j'
+                d[i][j] = calcVars(group, i, j)
         ii = None
         jj = None
         minvalue = 100000000
-        for i in range(len(group)):
-            for j in range(i, len(group)):
-                if i != j and d[i][j] < minvalue:
+        for i in range(len(group)):   # find min variance value
+            for j in range(i+1, len(group)):
+                if d[i][j] < minvalue:
                     minvalue = d[i][j]
                     ii = i
                     jj = j
@@ -270,7 +284,7 @@ if toPlot.lower()[0] == 'y':
     
 ### Select the Clustering Technique
 print("\nWhich clustering technique would you like to use?")
-print("(S)ingle linkage\n(C)omplete linkage\n(A)verage linkage\n(K)-means\n(W)-ard's Variance minimizing")
+print("(S)ingle linkage\n(C)omplete linkage\n(A)verage linkage\n(K)-means\n(W)ard's Variance minimizing")
 clusterTechnique = input().lower()
 # clusterTechnique = 'w'
 k = int(input("How many clusters? "))
